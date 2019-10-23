@@ -1,0 +1,7 @@
+{
+    "db_address" : "localhost",
+    "db_port" : "27017",
+    "input_file" : "input.txt",
+    "img_store" : "imgs",
+    "video_store" : "videos"
+}
