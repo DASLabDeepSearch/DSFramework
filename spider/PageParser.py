@@ -9,17 +9,18 @@ from urllib import request
 
 class DBThread(threading.Thread):
     '''
-        将解析结果写入数据库
-        暂时不确定每个线程链接一次DB好还是维持一个链接好
+        将解析结果写入数据库，传入一个网页对象的列表
+        （暂时不确定每个线程链接一次DB好还是维持一个链接好）
     '''
     def __init__(self, page_list):
+        threading.Thread.__init__(self)
         self.page_list = page_list
         with open('config.json') as f:
             config = json.load(f)
-
+        
         self.client = pymongo.MongoClient(host=config.get("db_address"), port= int(config.get("db_port")))
         self.db = self.client[config.get("db_database")] # 数据库名
-        self.collection = self.db[config.get("db_port")] # 集合名 
+        self.collection = self.db[config.get("db_collection")] # 集合名 
         self.lock = threading.Lock()
 
     def run(self):
@@ -27,7 +28,8 @@ class DBThread(threading.Thread):
         暂时不考虑加锁， 同时写入又怎样？
         '''
         # self.lock.acquire() # 防止写入磁盘速度（比request+解析页面还）慢 导致多用户写入
-        self.collection.insert_many(self.page_list) 
+        res = self.collection.insert_many(self.page_list)
+        print("--------Thread:  "  +  "插入" + str(len(res.inserted_ids)) + "条数据---------")
         # self.lock.release()
 
 class PageParser:
@@ -36,11 +38,24 @@ class PageParser:
         从 configure.json中读取配置信息（输入文件的路径）
         从输入文件中逐行获取新闻URL并进行解析
         暂时以dict形式返回网页内容，后续加上DB后再链接
+        接口：
+        parseFile(filename=None)
+            传入包含待解析URL的文件名（默认使用“input.txt”）
+            返回值： 列表，列表元素为 字典形式的网页对象
+            网页对象的属性：
+                url, html, title, published_time
+                description: 文章内容的概述
+                source：消息来源（最初发表者）
+                content: 新闻正文
+                img_urls, video_urls：正文包含的所有图片，视频 的 URL
+
+        parseURL(url)
+            传入 单个 待解析的URL
+            返回值： 单个字典形式的网页对象
     '''
     def __init__(self):
-        with open('config.json') as f:
-           self.config = json.load(f)
-
+        with open('./config.json') as f:
+            self.config = json.load(f)
         self.soup = None
         self.chunk_size = self.config.get("chunk_size") # 每解析chunk_size条数据 写入一次数据库
 
@@ -66,13 +81,14 @@ class PageParser:
         page_chunk = []
         line = 0
         for url in open(filename if filename != None else self.config.get("input_file")):
-            if(line > self.chunk_size):
+            if(line > self.chunk_size): # 缓冲区写满 写入DB 
                 line = 0 # 重新计数 
                 thread = DBThread(page_chunk)
                 thread.start()
                 page_chunk = [] # '清空'缓冲区
             page = self.parseURL(url)
             page_chunk.append(page)
+            line = line + 1
         return page_chunk
 
     def parseURL(self, url): # read from a specfic URL
