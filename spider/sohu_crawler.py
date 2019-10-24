@@ -71,7 +71,7 @@ def get_today_url():
     today=datetime.datetime(today.year,today.month,today.day)
     try:
         new=sohucrawler()
-        f=open(str(today.year)+'-'+str(today.month)+'-'+str(today.day)+'.txt','w')
+        f=open('./inputs/sohu_'+str(today.year)+str(today.month)+str(today.day)+'.txt','w')
         for i in new:
             f.write(i+'\n')
         f.close()
@@ -80,5 +80,3 @@ def get_today_url():
         print("Crawl failure")
     else:
         print("Crawl succeed")
-    
-get_today_url()
