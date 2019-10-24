@@ -114,7 +114,7 @@ def get_news():
 
     dateT = dateYestoday.strftime("%Y%m%d")
     #文件路径
-    file_path = './sina_' + dateT + '.txt'
+    file_path = './inputs/sina_' + dateT + '.txt'
     try:
         #存入txt文件
         file_write_obj = open(file_path, 'w')
@@ -142,7 +142,3 @@ def start():
         print("A network outage or other problem has occurred！！！")
     else:
         print("Success!!!!!!!!!!!!!!!")
-
-
-start()
-
