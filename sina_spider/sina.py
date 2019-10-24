@@ -3,14 +3,16 @@
 # @author : Du Qinghua
 # @time : 2019/10/22 19:46
 # @file : sina.py
-# 爬取新浪国际新闻链接
+# 爬取新浪国际新闻链接，获取前一天的新闻
 
+import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 import datetime
-import os
+from urllib import parse
 
+#爬取操作函数
 def get_news():
     # 创建chrome浏览器驱动，无头模式
     chrome_options = Options()
@@ -23,6 +25,8 @@ def get_news():
     driver.execute_script('window.scrollTo(0, document.body.scrollHeight)')
     # 获取的url集合
     url = []
+    # 当天新闻的url集合
+    urlToday = []
     # txt读取的url集合
     u = []
     # 定义循环标识，用于终止爬取循环
@@ -76,8 +80,6 @@ def get_news():
         print('An error occurred！')
         raise RuntimeError('Error')
 
-    # set去重网页链接
-    url = set(url)
     # 打印链接(调试)
     #print(url)
     # 打印链接个数(调试)
@@ -86,58 +88,61 @@ def get_news():
     driver.quit()
 
     '''
-    读取备份文件内容——剔除重复url
-    若文件存在，则比较内容，只保留差集部分
-    若文件不存在，全部保留
+    通过解析获取到的url，只保留前一天的新闻
     '''
-    #备份文件路径
-    file_path_sum = 'e:/sina/sina.txt'
-    try:
-        if (os.path.isfile(file_path_sum)):
-            with open(file_path_sum, "r") as f:
-                for line in f:
-                    line = line.strip('\n')
-                    u.append(line)
-        u = set(u)
-    except EOFError as e:
-        print("read txt Error! ")
+    dateYestoday=datetime.date.today()-datetime.timedelta(days=1)
 
-    #差集，剔除重复url
-    url=url.difference(u)
+    for u in url:
+        # url解码
+        urldata = parse.unquote(u)
+        # url结果
+        result = parse.urlparse(urldata)
+        #解析url获取时间  /w/2019-10-17/doc-iicezzrr2937406.shtml
+        s = result.path
+        #正则匹配日期
+        m = re.search(r"(\d{4}-\d{1,2}-\d{1,2})",s)
+        #未匹配到时间，根据新浪新闻url特点，可直接舍弃该url
+        if(m is None):
+            continue
+        else:
+            date2 = datetime.datetime.strptime(m.group(0),'%Y-%m-%d').date()
+            #比较时间，获取前一天新闻
+            if(date2==dateYestoday):
+                urlToday.append(u)
 
 
-    dateT = datetime.datetime.now().strftime("%Y%m%d")
+
+    dateT = dateYestoday.strftime("%Y%m%d")
     #当日文件路径
-    file_path = 'e:/sina/sina_' + dateT + '.txt'
+    file_path = './sina_' + dateT + '.txt'
     try:
         #存入txt文件
         file_write_obj = open(file_path, 'w')
-        #追加到备份文件
-        file_write_obj2 = open(file_path_sum, 'a')
-        for var in url:
+        for var in urlToday:
             file_write_obj.writelines(var)
             file_write_obj.write('\n')
-            file_write_obj2.writelines(var)
-            file_write_obj2.write('\n')
         file_write_obj.close()
-        file_write_obj2.close()
     except EOFError as e:
         print("wrote txt Error! ")
 
-
-if __name__ == '__main__':
-    #爬取结果标志
-    sucF=False
-    #尝试次数
-    count=0
-    #尝试次数小于五次且未爬取成功
-    while(count<5 and sucF==False):
+#开始爬取函数
+def start():
+    # 爬取结果标志
+    sucF = False
+    # 尝试次数
+    count = 0
+    # 尝试次数小于10次且未爬取成功
+    while (count < 10 and sucF == False):
         try:
             get_news()
             sucF = True
         except Exception as a:
-            count+=1
-    if(count>=5 or sucF==False):
+            count += 1
+    if (count >= 5 or sucF == False):
         print("A network outage or other problem has occurred！！！")
     else:
         print("Success!!!!!!!!!!!!!!!")
+
+
+start()
+
