@@ -113,7 +113,7 @@ def get_news():
 
 
     dateT = dateYestoday.strftime("%Y%m%d")
-    #当日文件路径
+    #文件路径
     file_path = './sina_' + dateT + '.txt'
     try:
         #存入txt文件
