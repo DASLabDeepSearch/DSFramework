@@ -3,7 +3,7 @@
     "db_port" : 27017,
     "db_database": "Web",
     "db_collection": "Pages",
-    "chunk_size": 200,
+    "chunk_size": 20,
     "input_file" : "./inputs/inputs.txt",
     "img_store" : "imgs",
     "video_store" : "videos"

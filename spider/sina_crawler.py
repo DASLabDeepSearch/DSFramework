@@ -123,7 +123,8 @@ def get_news():
             file_write_obj.write('\n')
         file_write_obj.close()
     except EOFError as e:
-        print("wrote txt Error! ")
+        print("wrote txt Error! ", e)
+    return file_path
 
 #开始爬取函数
 def start():
@@ -134,11 +135,13 @@ def start():
     # 尝试次数小于10次且未爬取成功
     while (count < 10 and sucF == False):
         try:
-            get_news()
+            file_path = get_news()
             sucF = True
         except Exception as a:
             count += 1
+            print(a)
     if (count >= 5 or sucF == False):
         print("A network outage or other problem has occurred！！！")
     else:
-        print("Success!!!!!!!!!!!!!!!")
+        print("新浪新闻爬取完成")
+    return file_path

@@ -29,7 +29,7 @@ class DBThread(threading.Thread):
         '''
         # self.lock.acquire() # 防止写入磁盘速度（比request+解析页面还）慢 导致多用户写入
         res = self.collection.insert_many(self.page_list)
-        print("--------Thread:  "  +  "插入" + str(len(res.inserted_ids)) + "条数据---------")
+        print("--------写入完毕 Thread:  "  +  "插入" + str(len(res.inserted_ids)) + "条数据---------")
         # self.lock.release()
 
 class PageParser:
@@ -82,17 +82,29 @@ class PageParser:
         line = 0
         for url in open(filename if filename != None else self.config.get("input_file")):
             if(line > self.chunk_size): # 缓冲区写满 写入DB 
+                print("开启数据库写入线程")
                 line = 0 # 重新计数 
                 thread = DBThread(page_chunk)
                 thread.start()
                 page_chunk = [] # '清空'缓冲区
-            page = self.parseURL(url)
-            page_chunk.append(page)
-            line = line + 1
+            try:
+                page = self.parseURL(url)
+                page_chunk.append(page)
+                line = line + 1
+            except Exception as e: # 有时候会request URL会超时导致抛出异常
+                print("===== parseURL出现异常，URL：", url, "\n", e)
+                pass
+        if(len(page_chunk) > 0):
+            print("开启数据库写入线程")
+            line = 0 # 重新计数 
+            thread = DBThread(page_chunk)
+            thread.start()     
         return page_chunk
 
     def parseURL(self, url): # read from a specfic URL
         self.site = self.judgeUrl(url)
+        if(self.site == 0):
+            raise Exception("不受支持的URL地址")
         page = {}
         page["url"] = url
         page["html"] = self.requestUrl(url) 

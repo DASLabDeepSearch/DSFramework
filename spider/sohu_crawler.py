@@ -66,17 +66,19 @@ def sohucrawler():
     driver.quit()
     return url
 
-def get_today_url():
+def start():
     today=datetime.datetime.now()
     today=datetime.datetime(today.year,today.month,today.day)
     try:
         new=sohucrawler()
-        f=open('./inputs/sohu_'+str(today.year)+str(today.month)+str(today.day)+'.txt','w')
+        file_path = './inputs/sohu_'+str(today.year)+str(today.month)+str(today.day)+'.txt'
+        f=open(file_path,'w')
         for i in new:
             f.write(i+'\n')
         f.close()
         
-    except:
-        print("Crawl failure")
+    except Exception as e:
+        print("Crawl failure", e)
     else:
-        print("Crawl succeed")
+        print("搜狐新闻爬取完成")
+    return file_path
