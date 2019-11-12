@@ -6,32 +6,6 @@ import threading
 from bs4 import BeautifulSoup
 from urllib import request
 
-
-class DBThread(threading.Thread):
-    '''
-        将解析结果写入数据库，传入一个网页对象的列表
-        （暂时不确定每个线程链接一次DB好还是维持一个链接好）
-    '''
-    def __init__(self, page_list):
-        threading.Thread.__init__(self)
-        self.page_list = page_list
-        with open('config.json') as f:
-            config = json.load(f)
-        
-        self.client = pymongo.MongoClient(host=config.get("db_address"), port= int(config.get("db_port")))
-        self.db = self.client[config.get("db_database")] # 数据库名
-        self.collection = self.db[config.get("db_collection")] # 集合名 
-        self.lock = threading.Lock()
-
-    def run(self):
-        '''
-        暂时不考虑加锁， 同时写入又怎样？
-        '''
-        # self.lock.acquire() # 防止写入磁盘速度（比request+解析页面还）慢 导致多用户写入
-        res = self.collection.insert_many(self.page_list)
-        print("--------写入完毕 Thread:  "  +  "插入" + str(len(res.inserted_ids)) + "条数据---------")
-        # self.lock.release()
-
 class PageParser:
     '''
         目前的解析仅针对 新浪国际新闻
@@ -59,6 +33,10 @@ class PageParser:
         self.soup = None
         self.chunk_size = self.config.get("chunk_size") # 每解析chunk_size条数据 写入一次数据库
 
+        self.client = pymongo.MongoClient(host=self.config.get("db_address"), port= int(self.config.get("db_port")))
+        self.db = self.client[self.config.get("db_database")] # 数据库名
+        self.collection = self.db[self.config.get("db_collection")] # 集合名 
+
     def judgeUrl(self, url):
         '''
         :param url: 输入的url地址
@@ -76,30 +54,16 @@ class PageParser:
             2. 逐行request
             3. 每次new一个Page对象
             4. 依次解析所有元素
-            5. TODO 保存到数据库（后期可以 先存到列表 然后开一个线程保存到数据库）
+            5. 保存到数据库
         '''
-        page_chunk = []
-        line = 0
         for url in open(filename if filename != None else self.config.get("input_file")):
-            if(line > self.chunk_size): # 缓冲区写满 写入DB 
-                print("开启数据库写入线程")
-                line = 0 # 重新计数 
-                thread = DBThread(page_chunk)
-                thread.start()
-                page_chunk = [] # '清空'缓冲区
             try:
                 page = self.parseURL(url)
-                page_chunk.append(page)
-                line = line + 1
+                res = self.collection.insert_one(page)
+                print(res.inserted_id)
             except Exception as e: # 有时候会request URL会超时导致抛出异常
                 print("===== parseURL出现异常，URL：", url, "\n", e)
                 pass
-        if(len(page_chunk) > 0):
-            print("开启数据库写入线程")
-            line = 0 # 重新计数 
-            thread = DBThread(page_chunk)
-            thread.start()     
-        return page_chunk
 
     def parseURL(self, url): # read from a specfic URL
         self.site = self.judgeUrl(url)
