@@ -1,3 +1,3 @@
 #! /bin/bash
 eval conda activate ds
-eval python Main.py 'merge'
+eval python Main.py 'collect'

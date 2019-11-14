@@ -139,28 +139,25 @@ def start():
     
     today=datetime.datetime.now()
 
-    #today=datetime.datetime(today.year,today.month,today.day)
+    file_path=str(today.hour)+str(today.minute)+str(today.second)+'.txt'
 
     try:
 
-        new=sohucrawler()
+        news=sohucrawler()
         
-        path = './inputs/sohu/'+str(today.year)+str(today.month)+str(today.day)
+        path = './inputs/'+str(today.year)+str(today.month)+str(today.day)
         #path = str(today.year)+str(today.month)+str(today.day)
-        
         if not (os.path.exists(path)):
             os.mkdir(path)
-        
-        file_path=path+'/'+str(today.hour)+str(today.minute)+str(today.second)+'.txt'
+        file_path=path+'/'+file_path
 
         f=open(file_path,'w')
 
-        for i in new:
+        for i in news:
 
             f.write(i+'\n')
 
         f.close()
-
         
 
     except Exception as e:
@@ -170,8 +167,6 @@ def start():
     else:
 
         print("搜狐新闻爬取完成")
-
-    return file_path
 
 def merge():
     
