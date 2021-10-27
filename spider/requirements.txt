@@ -1,7 +1,7 @@
 beautifulsoup4==4.8.1
 certifi==2019.9.11
 cycler==0.10.0
-dask==2.6.0
+dask==2021.10.0
 decorator==4.4.1
 kiwisolver==1.1.0
 mkl-fft==1.0.14
