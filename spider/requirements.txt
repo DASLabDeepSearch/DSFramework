@@ -1,5 +1,5 @@
 beautifulsoup4==4.8.1
-certifi==2019.9.11
+certifi==2022.12.7
 cycler==0.10.0
 dask==2.6.0
 decorator==4.4.1
